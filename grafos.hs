@@ -152,3 +152,14 @@ complementoAux vs g completo = map (\ v -> (v, difference (adyacentes v completo
 
 esComplemento :: G -> G -> Bool
 esComplemento g1 g2 = complemento g1 == g2
+
+
+
+
+--Representacion de grafos como Funciones
+gid :: V -> Conj V --Grafo no ponderado
+gid x = [x]
+
+
+gp :: V -> (Conj V -> Integer) -> Conj V
+gp v c = undefined
