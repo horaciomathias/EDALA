@@ -1,0 +1,56 @@
+GRAFOS PONDERADOS
+
+Gp = (A -> N, V-> P(v))
+
+Ejemplo:
+Gid : V -> P(N)
+Gid: \v -> [v]
+
+funcion de costo:
+Cv: A -> N
+Cv (o, d) = o --El costo es el origen
+
+Gpidcv : (A -> N, V -> P(N))
+Gpidcv = (Cv, Gid)
+
+costoCamino: (A -> N, V -> P(N)) -> [V] -> N
+costoCamino Gp [] 
+costoCamino gp [v] = 0
+costoCamino (c,g) (v1:v2:vs) = (c(v1,v2) + costoCamino (c, g) (v2:vs)
+
+
+
+DIJKSTRA
+
+costos: V -> N
+
+
+dijsktra :: (A -> N, V -> Conj V) -> V -> V -> N
+dijsktra gp o d = (dijsktra' gp o visit(costos o)) d 
+
+visit es una funcion que me retorna si un vertice fue visitado
+costos es una funcion de costos que representa el vector de costos
+
+dijsktra' :: (A -> N, V -> Conj V) -> V -> (V -> Bool) -> (V -> N) -> (V -> N)
+dijsktra' (c, g) v vs cs = dijsktra' (c, g) funcionVerticeMenorCosto (visit v vs) (costosA c v (g v) cs)
+
+costos :: V -> (V -> N)
+costos o = \v -> case v == o of {
+	True -> 0;
+	False -> 99999 -- numero muy grande representa el infinito
+}
+
+visit :: V -> Bool
+visit = \v.False
+visitV :: V -> (V -> Bool) -> (V -> Bool)
+visitV v vs = \v' -> v == v' || (vs v')
+
+costosA :: (A -> N) -> V -> [V] ->(V -> N) -> (V -> N)
+costosA c v [] cs = cs
+costosA c v (a:ady) cs = \a' -> case a == a' of {
+	False -> cs;
+	True -> case (cs a > c v + c(v, a)) of {
+		False -> cs a;
+		True -> cs v + c(v, a)
+	}
+}

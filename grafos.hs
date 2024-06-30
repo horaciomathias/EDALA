@@ -132,7 +132,6 @@ esCompleto g = esCompletoAux (vertices g) g
 esCompletoAux :: [V] -> G -> Bool
 esCompletoAux vs g = foldr (\ v -> (&&) (length (adyacentes v g) == length (vertices g))) True vs
 
-
 subgrafos :: G -> [G]
 subgrafos = undefined
 
@@ -152,8 +151,6 @@ complementoAux vs g completo = map (\ v -> (v, difference (adyacentes v completo
 
 esComplemento :: G -> G -> Bool
 esComplemento g1 g2 = complemento g1 == g2
-
-
 
 
 --Representacion de grafos como Funciones
