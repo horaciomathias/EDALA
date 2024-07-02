@@ -1,14 +1,15 @@
 module GraphsAsFunctions where
 import Data.List
 import Data.Maybe
---Grafos
-type N = Integer --consideraremos solo a los naturales.
+
+-- Grafos
+type N = Integer -- Consideraremos solo a los naturales.
 type Conj a = [a]
 type V = N
 type G = V -> Conj V
-type Gn = (G,N) -> G
+type Gn = (G,N)
 type A = (V,V)
-type AP = (V, V, N) -- esto o la aplicacion de la funcion de costo con cada arista
+type AP = (V, V, N) -- Esto o la aplicacion de la funcion de costo con cada arista
 type C = A -> N
 type GP = (Gn, C)
 
@@ -43,219 +44,222 @@ gfin 4 = [4,5]
 gfin 5 = [2,3,5]
 gfin _ = []
 
---grafo ponderado
-gp :: GP
-gp = (gn, c)
-  where
-    gn (g, n) v = g v
-    c (v1, v2) = if v1 == v2 then 0 else 1
-
---Definir un Gn
-gn :: Gn
-gn (g,n) v = if v < n then g v else undefined
-
 --Definir una funcion de costo
 c :: C
 c (v1, v2) = if v1 == v2 then 0 else 2
-
---Definir un grafo ponderado con el gn y c
-gp2 :: GP
-gp2 = (gn, c)
 
 geo2 :: G
 geo2 v
     | even v = [e | even v, e <- vertices geo2]
     | otherwise = [x | x <- vertices geo2, odd x]
 
-geo5 :: G
-geo5 = gn (geo, 5)
+existeArista :: A -> Gn -> Bool
+existeArista (v1, v2) (g, n) = v2 `elem` g v1
 
-existeArista :: A -> G -> Bool
-existeArista (v1, v2) g = v2 `elem` g v1
+tieneLazoV :: V -> Gn -> Bool
+tieneLazoV v (g, n) = v `elem` g v
 
-tieneLazoV :: V -> G -> Bool
-tieneLazoV v g = v `elem` g v
+esAislado :: V -> Gn -> Bool
+esAislado v (g, n) = null (g v)
 
-esAislado :: V -> G -> Bool
-esAislado v g = null (g v)
+existeSimetrica :: A -> Gn -> Bool
+existeSimetrica (v1, v2) (g, n) = v2 `elem` g v1 && v1 `elem` g v2
 
-existeSimetrica :: A -> G -> Bool
---existeSimetrica (v1, v2) g = v1 `elem` g v2
-existeSimetrica (v1, v2) g = v2 `elem` g v1 && v1 `elem` g v2
+gradoEntrada :: V -> GP -> Bool
+gradoEntrada v ((g, n), c) = length [x | x <- vertices g, existeArista (x, v) (g, n)] == length [x | x <- vertices g, existeArista (v, x) (g, n)]
 
-incidentes :: V -> [V] -> G -> N
-incidentes v [] g =  0
-incidentes v [v1] g = if v `elem` g v1 then 1 else 0
-incidentes v (v1 : vs) g = if v `elem` g v1 then 1 + incidentes v vs g else incidentes v vs g
---incidentes :: V -> [V] -> G -> Int
---incidentes v vs g = length [u | u <- vs, v `elem` (g u)]
+gradoSalida :: V -> GP -> Bool
+gradoSalida v ((g, n), c) = length [x | x <- vertices g, existeArista (v, x) (g, n)] == length [x | x <- vertices g, existeArista (x, v) (g, n)]
 
-gradoEntrada :: V -> G -> N
-gradoEntrada v g = incidentes v (vertices g) g
+gradoV :: V -> GP -> Bool
+gradoV v gp = gradoEntrada v gp && gradoSalida v gp
 
-gradoSalida :: V -> G -> N
-gradoSalida v g = fromIntegral (length (g v))
+vertices2 :: Gn -> [V]
+vertices2 (g, n) = [0..n]
 
-gradoV :: V -> G -> N
-gradoV v g = gradoEntrada v g + gradoSalida v g
+aristas :: Gn -> [A]
+aristas (g, n) = [(v1, v2) | v1 <- vertices2 (g, n), v2 <- g v1]
 
-vertices2 :: G -> [V]
-vertices2 g = [v | v <- [0..], not (null (g v))]
---vertices2 g = [v | v <- [0..5], not (null (g v))]
---devuelve una lista de todos los vértices del grafo g que tienen al menos un vértice adyacente. 
---Itera sobre los posibles vértices [0..] y selecciona aquellos que no tienen una lista de adyacencia vacía en el grafo g.
+grado :: Gn -> Bool
+grado (g, n) = all (\v -> gradoV v ((g, n), c)) (vertices2 (g, n))
 
-aristas :: G -> [A]
-aristas g = [(v1, v2) | v1 <- vertices2 g, v2 <- g v1]
+listaDeAdyacencia :: Gn -> [(V,[V])]
+listaDeAdyacencia (g, n) = [(v, g v) | v <- vertices2 (g, n)]
 
-grado :: G -> Bool
-grado g = all (\v -> gradoEntrada v g == gradoSalida v g) (vertices2 g)
---verifica si, en un grafo g, el grado de entrada es igual al grado de salida para todos los vértices del grafo. 
---Implica que cada vértice tiene el mismo número de aristas entrando y saliendo de él.
+matrizDeAdyacencia :: Gn -> [[Bool]]
+matrizDeAdyacencia (g, n) = [[existeArista (v1, v2) (g, n) | v2 <- vertices2 (g, n)] | v1 <- vertices2 (g, n)]
 
-listaDeAdyacencia :: G -> [(V,[V])]
---listaDeAdyacencia g = [(v, g v) | v <- vertices2 g] --queda en loop infinito
-listaDeAdyacencia g = [(v, g v) | v <- verticesLim g]
-  where
-    verticesLim g = takeWhile (not . null . g) [0..10] -- Limitar a 10 para evitar loops infinitos en la prueba
+parVA :: GP -> ([V],[AP])
+parVA ((g, n), c) = (vertices2 (g, n), [(v1, v2, c (v1, v2)) | v1 <- vertices2 (g, n), v2 <- g v1])
 
-matrizDeAdyacencia :: G -> [[Bool]]
-matrizDeAdyacencia g = [[v2 `elem` g v1 | v2 <- vertices] | v1 <- vertices]
-  where vertices = vertices2 g
+agregarA :: AP -> GP -> GP
+agregarA (v1, v2, p) ((g, n), c) =
+    let g' v = if v == v1 then v2 : g v else g v
+        c' a@(x, y) = if a == (v1, v2) then p else c a
+    in ((g', n), c')
 
+sacarA :: AP -> GP -> GP
+sacarA (v1, v2, p) ((g, n), c) =
+    let g' v = if v == v1 then filter (/= v2) (g v) else g v
+        c' a@(x, y) = if a == (v1, v2) then 0 else c a
+    in ((g', n), c')
 
-parVA :: G -> ([V],[A])
-parVA g = (vs, as)
-  where
-    vs = vertices2 g
-    as = aristas g
---La función parVA toma un grafo g y devuelve una tupla que contiene dos listas:
---  -Una lista de vértices [V] del grafo.
---  -Una lista de aristas [A] del grafo.
+esSubgrafo :: GP -> GP -> Bool
+esSubgrafo ((g1, n1), c1) ((g2, n2), c2) = all (\v -> g1 v == g2 v) (vertices2 (g1, n1))
 
-agregarA :: A -> G -> G
-agregarA (v1, v2) g v = if v == v1 then v2 : g v else g v
+sonComplementarios :: GP -> GP -> Bool
+sonComplementarios gp1 gp2 = esSubgrafo gp1 (complementario gp2) && esSubgrafo gp2 (complementario gp1)
 
-sacarA :: A -> G -> G
-sacarA (v1, v2) g v = if v == v1 then filter (/= v2) (g v) else g v
+complementario :: GP -> GP
+complementario ((g, n), c) =
+    let g' v = filter (\x -> not (existeArista (v, x) (g, n))) (vertices2 (g, n))
+        c' a = if existeArista a (g, n) then 0 else 1
+    in ((g', n), c')
 
-esSubgrafo :: G -> G -> Bool
-esSubgrafo g1 g2 = all (\v -> all (`elem` g2 v) (g1 v)) (vertices2 g1)
-
-sonComplementarios :: G -> G -> Bool
-sonComplementarios g1 g2 = all (\v -> g1 v == complementario g2 v) (vertices2 g1)
-  where
-    complementario g v = [u | u <- vertices2 g, u /= v, u `notElem` g v]
-
-complementario :: G -> G
-complementario g v = [u | u <- vertices2 g, u /= v, u `notElem` g v]
-
-esCamino :: [V] -> G -> [A]
+esCamino :: [V] -> GP -> [AP]
 esCamino [] _ = []
-esCamino [_] _ = []
-esCamino (v1:v2:vs) g
-  | v2 `elem` g v1 = (v1, v2) : esCamino (v2:vs) g
-  | otherwise = []
+esCamino [x] _ = []
+esCamino (x:y:xs) gp = if existeArista (x, y) (fst gp) then (x, y, snd gp (x, y)) : esCamino (y:xs) gp else []
 
-clausuraSimetrica :: G -> G
-clausuraSimetrica g v = g v ++ [u | u <- vertices2 g, v `elem` g u, u `notElem` g v]
--- Toma un grafo g y devuelve un nuevo grafo en el que, para cada vértice v, se asegura que si v está conectado a u, entonces u también está conectado a v. 
--- En otras palabras, agrega las aristas necesarias para hacer que las relaciones sean simétricas.
+clausuraSimetrica :: GP -> GP
+clausuraSimetrica ((g, n), c) =
+    let g' v = nub (g v ++ [x | x <- vertices2 (g, n), v `elem` g x])
+        c' (u, v)
+          | existeArista (u, v) (g, n) = c (u, v)
+          | existeArista (v, u) (g, n) = c (v, u)
+          | otherwise = 0
+    in ((g', n), c')
 
-clausuraTransitiva :: G -> G
-clausuraTransitiva g v = cierreTransitivo [v] [] g
--- toma un grafo g y devuelve un nuevo grafo, donde para cada vértice v, se obtiene la lista de vértices accesibles desde v usando la función auxiliar cierreTransitivo.
 
-cierreTransitivo :: [V] -> [V] -> G -> [V]
-cierreTransitivo [] cerrados _ = cerrados
-cierreTransitivo (x:xs) cerrados g
-  | x `elem` cerrados = cierreTransitivo xs cerrados g
-  | otherwise = cierreTransitivo (xs ++ g x) (x:cerrados) g
+clausuraTransitiva :: GP -> GP
+clausuraTransitiva ((g, n), c) =
+    let allVertices = vertices2 (g, n)
+        alcanzables v = nub (alcanzables' [v] [])
+        alcanzables' [] visitados = visitados
+        alcanzables' (x:xs) visitados
+            | x `elem` visitados = alcanzables' xs visitados
+            | otherwise = alcanzables' (xs ++ g x) (x : visitados)
+        g' v = filter (/= v) (alcanzables v) -- Elimina el mismo vértice para evitar lazo
+        c' (u, v)
+          | u == v = 0
+          | existeArista (u, v) (g, n) = c (u, v)
+          | otherwise = 1
+    in ((g', n), c')
 
-esCiclico :: G -> Bool
-esCiclico g = any (\v -> v `elem` cierreTransitivo [v] [] g) (vertices2 g)
+esCiclico :: GP -> Bool
+esCiclico ((g, n), c) = any (\v -> v `elem` g v) (vertices2 (g, n))
 
-esConexo :: G -> Bool
---esConexo g = all (\v -> length (cierreTransitivo [v] [] g) == length (vertices2 g)) (vertices2 g)
-esConexo g = length (dfs g) == length (vertices2 g)
+esConexo :: GP -> Bool
+esConexo ((g, n), c) = all (\v -> not (esAislado v (g, n))) (vertices2 (g, n))
 
-ordenTopologico :: G -> [V]
-ordenTopologico g = reverse (topoSort (vertices2 g) [])
+ordenTopologico :: GP -> [V]
+ordenTopologico ((g, n), c) = ordenTopologico' (vertices2 (g, n)) (const False) []
   where
-    topoSort [] visitados = visitados
-    topoSort (x:xs) visitados
-      | x `elem` visitados = topoSort xs visitados
-      | otherwise = topoSort xs (dfsVisit g x visitados)
+    ordenTopologico' [] visitados resultado = reverse resultado
+    ordenTopologico' (v:vs) visitados resultado
+      | visitados v = ordenTopologico' vs visitados resultado
+      | all visitados (g v) = ordenTopologico' vs (\x -> x == v || visitados x) (v : resultado)
+      | otherwise = ordenTopologico' (vs ++ [v]) visitados resultado
 
-    dfsVisit g v visitados = foldl (\acc u -> if u `elem` acc then acc else dfsVisit g u acc) (v : visitados) (g v)
+dfs :: GP -> [V]
+dfs gp@(gn@(g, n), c) = dfs' (vertices2 gn) (const False)
 
-dfs :: G -> [V]
-dfs g = dfs' [start] []
-  where
-    start = head (vertices2 g)
-    dfs' [] visitados = visitados
-    dfs' (x:xs) visitados
-      | x `elem` visitados = dfs' xs visitados
-      | otherwise = dfs' (g x ++ xs) (x:visitados)
+dfs' :: [a] -> (a -> Bool) -> [a]
+dfs' [] visitados = []
+dfs' (v:vs) visitados
+  | visitados v = dfs' vs visitados
+  | otherwise = v : dfs' (g v ++ vs) (\x -> x == v || visitados x)
 
-bfs :: G -> [V]
-bfs g = bfs' [start] []
-  where
-    start = head (vertices2 g)
-    bfs' [] visitados = visitados
-    bfs' (x:xs) visitados
-      | x `elem` visitados = bfs' xs visitados
-      | otherwise = bfs' (xs ++ g x) (visitados ++ [x])
+bfs :: GP -> [V]
+bfs ((g, n), c) = bfs' (vertices2 (g, n)) (const False) g
 
-vertices3 :: Gn -> N -> [V]
-vertices3 gn n = [v | v <- [0..n-1], not (null (gn (undefined, n) v))]
+bfs' :: [V] -> (V -> Bool) -> G -> [V]
+bfs' [] visitados _ = []
+bfs' (v:vs) visitados g
+  | visitados v = bfs' vs visitados g
+  | otherwise = v : bfs' (vs ++ g v) (\x -> x == v || visitados x) g
+
+infinito :: Int
+infinito = 999999
 
 dijkstra :: V -> V -> GP -> Int
-dijkstra o d gp = case lookup d (dijkstra' o gp) of
-    Just costo -> costo
-    Nothing -> error "No se encontró un camino"
+dijkstra origen destino gp = case lookup destino (dijkstra' origen gp) of
+    Just distancia -> distancia
+    Nothing -> infinito
 
 dijkstra' :: V -> GP -> [(V, Int)]
-dijkstra' o (gn, c) = dijkstraAux [(o, 0)] [] gn c
+dijkstra' origen gp@((g, n), c) = dijkstraRec [origen] [] (inicializarDistancias (vertices2 (g, n)) origen)
   where
-    dijkstraAux [] costos _ _ = costos
-    dijkstraAux ((v, costo):cola) costos gn c
-      | v `elem` map fst costos = dijkstraAux cola costos gn c
-      | otherwise = dijkstraAux nuevaCola ((v, costo) : costos) gn c
-      where
-        g = gn (undefined, 0)
-        vecinos = g v
-        nuevaCola = cola ++ [(u, costo + fromIntegral (c (v, u))) | u <- vecinos, u `notElem` map fst costos]
+    inicializarDistancias :: [V] -> V -> [(V, Int)]
+    inicializarDistancias vs origen = [(v, if v == origen then 0 else infinito) | v <- vs]
+
+    dijkstraRec :: [V] -> [V] -> [(V, Int)] -> [(V, Int)]
+    dijkstraRec [] _ distancias = distancias
+    dijkstraRec (v:vs) visitados distancias =
+        let vecinos = g v
+            distV = fromJust (lookup v distancias)
+            distancias' = foldl (actualizarDistancia v distV) distancias vecinos
+            visitados' = v : visitados
+            (v', _) = minimoNoVisitado distancias' visitados'
+        in dijkstraRec (delete v' (vertices2 (g, n)) ++ vs) visitados' distancias'
+
+    actualizarDistancia :: V -> Int -> [(V, Int)] -> V -> [(V, Int)]
+    actualizarDistancia v distV distancias vecino =
+        let alt = distV + fromIntegral (c (v, vecino))
+            distVecino = fromJust (lookup vecino distancias)
+        in if alt < distVecino
+           then (vecino, alt) : delete (vecino, distVecino) distancias
+           else distancias
+
+    minimoNoVisitado :: [(V, Int)] -> [V] -> (V, Int)
+    minimoNoVisitado distancias visitados =
+        let noVisitados = filter (\(v, _) -> v `notElem` visitados) distancias
+        in foldl1 (\acc x -> if snd x < snd acc then x else acc) noVisitados
 
 dijkstra'' :: V -> GP -> [(V, V)]
-dijkstra'' o (gn, c) = dijkstraAux [(o, o)] [] gn c
+dijkstra'' origen gp@((g, n), c) = dijkstraRec [origen] [] (inicializarDistancias (vertices2 (g, n)) origen) []
   where
-    dijkstraAux [] preds _ _ = preds
-    dijkstraAux ((v, pred):cola) preds gn c
-      | v `elem` map fst preds = dijkstraAux cola preds gn c
-      | otherwise = dijkstraAux nuevaCola ((v, pred) : preds) gn c
-      where
-        g = gn (undefined, 0)
-        vecinos = g v
-        nuevaCola = cola ++ [(u, v) | u <- vecinos, u `notElem` map fst preds]
+    inicializarDistancias :: [V] -> V -> [(V, Int)]
+    inicializarDistancias vs origen = [(v, if v == origen then 0 else infinito) | v <- vs]
 
-dijkstra''' :: V -> GP -> [(V, V, Int)]
-dijkstra''' o gp = [(v, p, costo) | (v, costo) <- costos, (p, v') <- preds, v == v']
-  where
-    costos = dijkstra' o gp
-    preds = dijkstra'' o gp
+    dijkstraRec :: [V] -> [V] -> [(V, Int)] -> [(V, V)] -> [(V, V)]
+    dijkstraRec [] _ _ caminos = caminos
+    dijkstraRec (v:vs) visitados distancias caminos =
+        let vecinos = g v
+            distV = fromJust (lookup v distancias)
+            (distancias', caminos') = foldl (actualizarDistanciaYCaminos v distV) (distancias, caminos) vecinos
+            visitados' = v : visitados
+            (v', _) = minimoNoVisitado distancias' visitados'
+        in dijkstraRec (delete v' (vertices2 (g, n)) ++ vs) visitados' distancias' caminos'
+
+    actualizarDistanciaYCaminos :: V -> Int -> ([(V, Int)], [(V, V)]) -> V -> ([(V, Int)], [(V, V)])
+    actualizarDistanciaYCaminos v distV (distancias, caminos) vecino =
+        let alt = distV + fromIntegral (c (v, vecino))
+            distVecino = fromJust (lookup vecino distancias)
+        in if alt < distVecino
+           then ((vecino, alt) : delete (vecino, distVecino) distancias, (vecino, v) : caminos)
+           else (distancias, caminos)
+
+    minimoNoVisitado :: [(V, Int)] -> [V] -> (V, Int)
+    minimoNoVisitado distancias visitados =
+        let noVisitados = filter (\(v, _) -> v `notElem` visitados) distancias
+        in foldl1 (\acc x -> if snd x < snd acc then x else acc) noVisitados
+
+dijkstra''' :: V -> GP -> [(V, V, N)]
+dijkstra''' origen gp@((g, n), c) = [(v, u, c (u, v)) | (v, u) <- dijkstra'' origen gp]
+
 
 --Dijsktra visto en clase
-dijkstraClase :: (A -> N, V -> Conj V) -> V -> V -> N
-dijkstraClase gp o = dijkstraClase' gp o (visit o) (costos o)
+dijkstraClase :: GP -> V -> V -> N
+dijkstraClase gp@((g, n), cs) o = dijkstraClase' gp o (const False) (costos o)  
 
-dijkstraClase' :: (A -> N, V -> Conj V) -> V -> (V -> Bool) -> (V -> N) -> (V -> N)
-dijkstraClase' (c, g) v vs cs
-  | all vs (vertices2 g) = cs
-  | otherwise = dijkstraClase' (c, g) (verticeMenorCosto g vs cs) (visitV v vs) (costosA c v (g v) cs)
+dijkstraClase' :: GP -> V -> (V -> Bool) -> (V -> N) -> (V -> N)
+dijkstraClase' gp@(gn@(g, n), fc) v fVisitados fCostos
+  | all fVisitados (vertices2 gn) = fCostos
+  | otherwise = dijkstraClase' gp (verticeMenorCosto gp fVisitados fCostos) (visitV v fVisitados) (costosA c v (g v) fCostos)
 
 costos :: V -> (V -> N)
-costos o v = if v == o then 0 else 99999 -- número muy grande representa el infinito
+costos o v = if v == o then 0 else 99999 -- número muy grande, representa el infinito
 
 visit :: V -> (V -> Bool)
 visit _ _ = False
@@ -272,8 +276,8 @@ costosA c v (a:ady) cs = \a' -> case a == a' of
             updatedCs = costosA c v ady cs
 
 
-verticeMenorCosto :: (V -> Conj V) -> (V -> Bool) -> (V -> N) -> V
-verticeMenorCosto g vs cs = head [u | u <- vertices2 g, not (vs u), cs u == minimum [cs x | x <- vertices2 g, not (vs x)]]
+verticeMenorCosto :: GP -> (V -> Bool) -> (V -> N) -> V
+verticeMenorCosto ((g, n), c) vs cs = head [u | u <- vertices2 g, not (vs u), cs u == minimum [cs x | x <- vertices2 g, not (vs x)]]
 
 -- Función para obtener todas las aristas del grafo con sus pesos
 obtenerAristasConPeso :: (A -> N) -> G -> [AP]
@@ -294,18 +298,38 @@ unir v1 v2 padre = (v1, raiz2) : padre
     raiz2 = encontrar v2 padre
 
 kruskalAux :: [AP] -> [A] -> [(V, V)] -> [A]
-kruskalAux [] mst _ = mst
-kruskalAux ((v1, v2, _):as) mst padre
-  | encontrar v1 padre /= encontrar v2 padre = kruskalAux as ((v1, v2) : mst) (unir v1 v2 padre)
-  | otherwise = kruskalAux as mst padre
+kruskalAux [] acm _ = acm
+kruskalAux ((v1, v2, _):as) acm padre
+  | encontrar v1 padre /= encontrar v2 padre = kruskalAux as ((v1, v2) : acm) (unir v1 v2 padre)
+  | otherwise = kruskalAux as acm padre
 
--- Función para construir el grafo a partir de las aristas
-construirGrafo :: [A] -> G
-construirGrafo aristas v = [u | (x, u) <- aristas, x == v] ++ [x | (x, u) <- aristas, u == v]
 
-kruskal :: (A -> N) -> G -> G
-kruskal c g = construirGrafo (kruskalAux aristasOrdenadas [] (map (\v -> (v, v)) vs))
+kruskal :: GP -> GP
+kruskal ((g, n), c) = ((g', n), c)
   where
-    aristas = obtenerAristasConPeso c g
-    aristasOrdenadas = ordenarAristas aristas
-    vs = vertices2 g
+    edges = ordenarAristas c [(u, v) | u <- vertices2 (g, n), v <- g u]
+    vertices2 (g, n) = [0..n-1]
+    g' v = [u | (u, v') <- acm, v' == v] ++ [v' | (u, v') <- acm, u == v]
+    
+    acm = kruskal' edges []
+
+    kruskal' [] acm = acm
+    kruskal' ((u, v):es) acm
+      | not (connected u v acm) = kruskal' es ((u, v) : acm)
+      | otherwise = kruskal' es acm
+    
+    connected u v acm = find u acm == find v acm
+
+    find v acm = find' v (map (\(x, y) -> (y, x)) acm ++ acm)
+
+    find' v [] = v
+    find' v ((x, y):xs)
+      | v == x = find' y xs
+      | otherwise = find' v xs
+
+    --QickSort
+    ordenarAristas c [] = []
+    ordenarAristas c (pivote:resto) =
+      ordenarAristas c [y | y <- resto, c y <= c pivote]
+      ++ [pivote] ++
+      ordenarAristas c [y | y <- resto, c y > c pivote]

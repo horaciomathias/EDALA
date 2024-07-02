@@ -54,3 +54,72 @@ costosA c v (a:ady) cs = \a' -> case a == a' of {
 		True -> cs v + c(v, a)
 	}
 }
+
+
+
+--OTRA VERSION
+dijkstra :: V -> V -> GP -> Int
+dijkstra origen destino gp = fromMaybe infinito (lookup destino (dijkstra' origen gp))
+
+--calcula las distancias mínimas desde un vértice origen a todos los demás vértices en un grafo ponderado.
+dijkstra' :: V -> GP -> [(V, Int)]
+dijkstra' origen gp@((g, n), c) = dijkstraRec [origen] [] (inicializarDistancias (vertices2 (g, n)) origen)
+  where
+    inicializarDistancias :: [V] -> V -> [(V, Int)]
+    inicializarDistancias vs origen = [(v, if v == origen then 0 else infinito) | v <- vs]
+
+    dijkstraRec :: [V] -> [V] -> [(V, Int)] -> [(V, Int)]
+    dijkstraRec [] _ distancias = distancias
+    dijkstraRec (v:vs) visitados distancias =
+        let vecinos = g v
+            distV = fromJust (lookup v distancias)
+            distancias' = foldl (actualizarDistancia v distV) distancias vecinos
+            visitados' = v : visitados
+            (v', _) = minimoNoVisitado distancias' visitados'
+        in dijkstraRec (delete v' (vertices2 (g, n)) ++ vs) visitados' distancias'
+
+    actualizarDistancia :: V -> Int -> [(V, Int)] -> V -> [(V, Int)]
+    actualizarDistancia v distV distancias vecino =
+        let alt = distV + fromIntegral (c (v, vecino))
+            distVecino = fromJust (lookup vecino distancias)
+        in if alt < distVecino
+           then (vecino, alt) : delete (vecino, distVecino) distancias
+           else distancias
+
+    minimoNoVisitado :: [(V, Int)] -> [V] -> (V, Int)
+    minimoNoVisitado distancias visitados =
+        let noVisitados = filter (\(v, _) -> v `notElem` visitados) distancias
+        in foldl1 (\acc x -> if snd x < snd acc then x else acc) noVisitados
+
+--rastrea los caminos más cortos en términos de las aristas que se recorren
+dijkstra'' :: V -> GP -> [(V, V)]
+dijkstra'' origen gp@((g, n), c) = dijkstraRec [origen] [] (inicializarDistancias (vertices2 (g, n)) origen) []
+  where
+    inicializarDistancias :: [V] -> V -> [(V, Int)]
+    inicializarDistancias vs origen = [(v, if v == origen then 0 else infinito) | v <- vs]
+
+    dijkstraRec :: [V] -> [V] -> [(V, Int)] -> [(V, V)] -> [(V, V)]
+    dijkstraRec [] _ _ caminos = caminos
+    dijkstraRec (v:vs) visitados distancias caminos =
+        let vecinos = g v
+            distV = fromJust (lookup v distancias)
+            (distancias', caminos') = foldl (actualizarDistanciaYCaminos v distV) (distancias, caminos) vecinos
+            visitados' = v : visitados
+            (v', _) = minimoNoVisitado distancias' visitados'
+        in dijkstraRec (delete v' (vertices2 (g, n)) ++ vs) visitados' distancias' caminos'
+
+    actualizarDistanciaYCaminos :: V -> Int -> ([(V, Int)], [(V, V)]) -> V -> ([(V, Int)], [(V, V)])
+    actualizarDistanciaYCaminos v distV (distancias, caminos) vecino =
+        let alt = distV + fromIntegral (c (v, vecino))
+            distVecino = fromJust (lookup vecino distancias)
+        in if alt < distVecino
+           then ((vecino, alt) : delete (vecino, distVecino) distancias, (vecino, v) : caminos)
+           else (distancias, caminos)
+
+    minimoNoVisitado :: [(V, Int)] -> [V] -> (V, Int)
+    minimoNoVisitado distancias visitados =
+        let noVisitados = filter (\(v, _) -> v `notElem` visitados) distancias
+        in foldl1 (\acc x -> if snd x < snd acc then x else acc) noVisitados
+
+dijkstra''' :: V -> GP -> [(V, V, N)]
+dijkstra''' origen gp@((g, n), c) = [(v, u, c (u, v)) | (v, u) <- dijkstra'' origen gp]
