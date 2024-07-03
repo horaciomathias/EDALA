@@ -122,4 +122,4 @@ dijkstra'' origen gp@((g, n), c) = dijkstraRec [origen] [] (inicializarDistancia
         in foldl1 (\acc x -> if snd x < snd acc then x else acc) noVisitados
 
 dijkstra''' :: V -> GP -> [(V, V, N)]
-dijkstra''' origen gp@((g, n), c) = [(v, u, c (u, v)) | (v, u) <- dijkstra'' origen gp]
+dijkstra''' origen gp@((g, n), c) = [(v, u, c (u, v)) | (v, u) <- dijkstra'' origen gp

@@ -1,4 +1,4 @@
-import GraphsAsFunctions
+import GAF2
 import Control.Monad.RWS (MonadState(put))
 import Distribution.PackageDescription (KnownRepoType(GnuArch))
 
@@ -154,8 +154,13 @@ main = do
     let v4 = 4
     let v5 = 5
 
+    --definir una funcion de costo
+    let f :: A -> N
+        f (u, v) = if u == v then 0 else 1
+    
     gp :: GP
-    gp = (\(u, v) -> 1, \v -> if v <= 5 then gleq v else [])
+    gp = ((gn, 10), f)
+
     -- probar dijkstra con gp
     putStrLn $ "dijkstra gp 0 5: " ++ show (dijkstra v2 v1 gp)
     putStrLn $ "dijkstra gp 0 4: " ++ show (dijkstra v4 v3 gp)
