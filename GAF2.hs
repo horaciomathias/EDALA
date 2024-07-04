@@ -1,25 +1,20 @@
 module GAF2 where
 import Data.List
 import Data.Maybe
---Grafos
-type N = Integer --consideraremos solo a los naturales.
+
+type N = Integer
 type Conj a = [a]
 type V = N
 type G = V -> Conj V
 type Gn = (G,N)
 type A = (V,V)
-type AP = (V, V, N) -- esto o la aplicacion de la funcion de costo con cada arista
+type AP = (V, V, N)
 type C = A -> N
 type GP = V -> C -> Conj V
 
-
-
--- Función de costo para pruebas
---let c (v1, v2) = if v1 == v2 then 0 else v1
 fnCKruskal :: C
-fnCKruskal (v1, v2) = if v1 == v2 then 0 else v1 
+fnCKruskal (v1, v2) = if v1 == v2 then 0 else v1
 
--- Grafo de prueba
 gTest :: G
 gTest v = case v of
     0 -> [1, 2]
@@ -28,7 +23,15 @@ gTest v = case v of
     3 -> []
     _ -> []
 
--- Grafo completo
+gTest2 :: G
+gTest2 v = case v of
+                       0 -> [1, 2]
+                       1 -> [3]
+                       2 -> [3, 4]
+                       3 -> [4]
+                       4 -> []
+                       _ -> []
+
 gCompleto :: G
 gCompleto v = [u | u <- [0..3], u /= v]
 
@@ -64,7 +67,6 @@ vertices g = [0..]
 fc :: C
 fc (v1, v2) = if v1 == v2 then 0 else 2
 
--- grafo ponderado de prueba
 grafoP1 :: GP
 grafoP1 v fnC = gn v
 
@@ -122,7 +124,6 @@ agregarA (v1, v2) g v = if v == v1 then v2 : g v else g v
 sacarA :: A -> G -> G
 sacarA (v1, v2) g v = if v == v1 then filter (/= v2) (g v) else g v
 
-
 esSubgrafo :: Gn -> Gn -> Bool
 esSubgrafo gn1@(g1,n) gn2@(g2, m) = (m >= n) && incluida aristasG1 aristasG2
   where
@@ -134,11 +135,12 @@ incluida [] _ = True
 incluida (a:as) bs = a `elem` bs && incluida as bs
 
 sonComplementarios :: Gn -> Gn -> Bool
-sonComplementarios gn1@(g1,n) gn2@(g2, m) = (m == n) &&
-    incluida aristasG1 aristasComplemento && incluida aristasComplemento aristasG1
-        where
-            aristasG1 = aristas gn1
-            aristasComplemento = aristas (complementario gn2, m)
+sonComplementarios gn1@(g1,n) gn2@(g2,m) = (n == m) && mismosElementos aristasG1 aristasComplemento
+  where
+    aristasG1 = aristas gn1
+    aristasG2 = aristas gn2
+    aristasComplemento = [(v1, v2) | v1 <- vertices2 gn1, v2 <- vertices2 gn1, (v1, v2) `notElem` aristasG2]
+
 
 complementario :: Gn -> G
 complementario gn@(g,n) = construirGrafo [(v1, v2) | v1 <- vertices2 gn, v2 <- vertices2 gn, not (existeArista (v1, v2) g)]
@@ -173,8 +175,25 @@ esConexo gn@(g, n) = all (`elem` visitados) (vertices2 gn)
   where
     visitados = dfs g (head (vertices2 gn))
 
-ordenTopologico :: G -> [V]
-ordenTopologico = undefined
+ordenTopologico :: Gn -> [V]
+ordenTopologico gn@(g, n) = ordenTopologico' gn verticesProcesablesIniciales [] gradosEntradaIniciales
+  where
+    verticesProcesablesIniciales = [v | v <- vertices2 gn, gradoEntrada v gn == 0]
+    gradosEntradaIniciales = [(v, gradoEntrada v gn) | v <- vertices2 gn]
+
+-- Función recursiva que construye el orden topológico
+ordenTopologico' :: Gn -> [V] -> [V] -> [(V, N)] -> [V]
+ordenTopologico' _ [] orden _ = reverse orden
+ordenTopologico' gn@(g, n) (v:vs) ordenT gradosEnt = ordenTopologico' gn nuevosVerticesProcesables (v : ordenT) nuevosGrados
+  where
+    adyacentes = g v
+    nuevosGrados = map (decrementarGrados adyacentes) gradosEnt
+    nuevosVerticesProcesables = vs ++ [v' | (v', grado) <- nuevosGrados, grado == 0, v' `notElem` (v:vs ++ ordenT)]
+
+-- Función para decrementar el grado de entrada de los vecinos
+decrementarGrados :: [V] -> (V, N) -> (V, N)
+decrementarGrados adyacentes (v, grado) = if v `elem` adyacentes then (v, grado - 1) else (v, grado)
+
 
 dfs :: G -> V -> [V]
 dfs g v = dfs' g [v] []
@@ -226,21 +245,21 @@ verticeMenorCosto gn@(g,n) vs cs = foldr1 (\u v -> if cs u < cs v then u else v)
 
 kruskal :: C -> Gn -> G
 kruskal cost gn@(g, n) = construirGrafo (kruskal' aristasOrdenadas aristasACM verticesGrafo)
-    where
-        aristasOrdenadas = sortBy (\a b -> compare (cost a) (cost b)) (aristas gn)
-        aristasACM = []
-        verticesGrafo = vertices2 gn
+  where
+    verticesGrafo = vertices2 gn
+    aristasOrdenadas = sortBy (\a b -> compare (cost a) (cost b)) (aristas gn)
+    aristasACM = []
 
--- kruskal' toma la lista de aristas ordenadas por peso, el acm parcial y el conjunto de vértices del grafo
 kruskal' :: [A] -> [A] -> [V] -> [A]
 kruskal' [] acm _ = acm
 kruskal' (a:as) acm vs
-   | formaCiclo a acm = kruskal' as acm vs
+   | formaCiclo a acm (fromIntegral (length vs)) = kruskal' as acm vs
    | otherwise = kruskal' as (a:acm) vs
 
--- Detecta si una lista de aristas forma un ciclo usando la función hayCamino
-formaCiclo :: A -> [A] -> Bool
-formaCiclo a acm = uncurry (hayCamino (construirGrafo acm)) a
+formaCiclo :: A -> [A] -> N -> Bool
+formaCiclo a acm n = uncurry (hayCamino clausuraSimetricaGrafo) a
+    where
+        clausuraSimetricaGrafo = clausuraSimetrica (construirGrafo acm, n)
 
 --Auxiliares
 estaIncluida :: Eq a => [a] -> [a] -> Bool

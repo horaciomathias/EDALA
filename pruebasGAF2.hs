@@ -2,6 +2,7 @@ import GAF2
 
 main :: IO ()
 main = do
+
     putStrLn "Pruebas de funciones de grafos"
 
     -- Pruebas para existeArista
@@ -124,13 +125,14 @@ main = do
     putStrLn $ "esSubgrafo (gSinLazo, 10) (gn, 10): " ++ show (esSubgrafo gSinLazo10 gn2)
     putStrLn "---FIN ES SUBGRAFO---"
 
-    let gn1 = (gn, 5)
-        gn2 = (complementario (gn, 5), 5)
+    -- Pruebas para sonComplementarios
+    let gn1 = (gn, 10)
+        gn2 = (complementario (gn, 10), 10)
         gAislado10 = (gAislado, 10)
         gnSinLazo10 = (gSinLazo, 10)
 
     putStrLn "---COMIENZO SON COMPLEMENTARIOS---"
-    putStrLn $ "sonComplementarios (gn, 5) (complementario (gn, 5), 5): " ++ show (sonComplementarios gn1 gn2)
+    putStrLn $ "sonComplementarios (gn, 5) (complementario (gn, 10), 10): " ++ show (sonComplementarios gn1 gn2)
     putStrLn $ "sonComplementarios (gn, 5) (gn, 5): " ++ show (not (sonComplementarios gn1 gn1))
     putStrLn $ "sonComplementarios (gAislado, 10) (gn, 10): " ++ show (not (sonComplementarios gAislado10 gn2))
     putStrLn $ "sonComplementarios (gSinLazo, 10) (gn, 10): " ++ show (not (sonComplementarios gSinLazo10 gn2))
@@ -209,6 +211,24 @@ main = do
     putStrLn $ "esCiclico (gSoloLazo, 10): " ++ show (esCiclico gSoloLazoTest)
     putStrLn "---FIN ES CICLICO---"
 
+    -- Pruebas para ordenTopologico
+    -- Grafo con múltiples caminos acíclicos
+    let gTest2 v = case v of
+                       0 -> [1, 2]
+                       1 -> [3]
+                       2 -> [3, 4]
+                       3 -> [4]
+                       4 -> []
+                       _ -> []
+
+    putStrLn "---COMIENZO ORDEN TOPOLOGICO---"
+    putStrLn $ "ordenTopologico (gLt, 4): " ++ show (ordenTopologico (gLt, 10) == [9,8,7,6,5,4,3,2,1,0])
+    putStrLn $ "ordenTopologico (gAislado, 4): " ++ show (ordenTopologico (gAislado, 10) == [0,1,2,3,4,5,6,7,8,9])
+    putStrLn $ "ordenTopologico (gSoloLazo, 4): " ++ show (null (ordenTopologico (gSoloLazo, 10)))
+    putStrLn $ "ordenTopologico (gCompleto, 4): " ++ show (null (ordenTopologico (gCompleto, 3)))
+    putStrLn $ "ordenTopologico (gn, 4): " ++ show (null (ordenTopologico (gn, 10)))
+    putStrLn $ "ordenTopologico (gTest2, 5): " ++ show (ordenTopologico (gTest2, 5) == [0, 2, 1, 3, 4] || ordenTopologico (gTest2, 5) == [0, 1, 2, 3, 4])
+    putStrLn "---FIN ORDEN TOPOLOGICO---"
 
     -- Pruebas para esConexo
     let gnTest = (gn, 10)
@@ -216,7 +236,6 @@ main = do
         gAisladoTest = (gAislado, 10)
         gSoloLazoTest = (gSoloLazo, 10)
         gCompletoTest = (const [0 .. 9], 10)
-
     putStrLn "---COMIENZO ES CONEXO---"
     putStrLn $ "esConexo (gn, 10): " ++ show (not (esConexo gnTest))
     putStrLn $ "esConexo (gSinLazo, 10): " ++ show (not (esConexo gSinLazoTest))
