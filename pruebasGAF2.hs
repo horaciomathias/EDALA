@@ -2,7 +2,6 @@ import GAF2
 
 main :: IO ()
 main = do
-
     putStrLn "Pruebas de funciones de grafos"
 
     -- Pruebas para existeArista
