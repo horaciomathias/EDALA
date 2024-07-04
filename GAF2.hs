@@ -1,4 +1,6 @@
 module GAF2 where
+import Data.List
+import Data.Maybe
 --Grafos
 type N = Integer --consideraremos solo a los naturales.
 type Conj a = [a]
@@ -10,6 +12,25 @@ type AP = (V, V, N) -- esto o la aplicacion de la funcion de costo con cada aris
 type C = A -> N
 type GP = V -> C -> Conj V
 
+
+
+-- Función de costo para pruebas
+--let c (v1, v2) = if v1 == v2 then 0 else v1
+fnCKruskal :: C
+fnCKruskal (v1, v2) = if v1 == v2 then 0 else v1 
+
+-- Grafo de prueba
+gTest :: G
+gTest v = case v of
+    0 -> [1, 2]
+    1 -> [2, 3]
+    2 -> [3]
+    3 -> []
+    _ -> []
+
+-- Grafo completo
+gCompleto :: G
+gCompleto v = [u | u <- [0..3], u /= v]
 
 geo :: G
 geo v
@@ -192,7 +213,7 @@ visit _ _ = False
 visitV :: V -> (V -> Bool) -> (V -> Bool)
 visitV v vs v' = v == v' || vs v'
 
-costosA :: (A -> N) -> V -> [V] -> (V -> N) -> (V -> N)
+costosA :: C -> V -> [V] -> (V -> N) -> (V -> N)
 costosA c v [] cs = cs
 costosA c v (a:ady) cs = costosA c v ady updatedCs
   where
@@ -203,9 +224,23 @@ costosA c v (a:ady) cs = costosA c v ady updatedCs
 verticeMenorCosto :: Gn -> (V -> Bool) -> (V -> N) -> V
 verticeMenorCosto gn@(g,n) vs cs = foldr1 (\u v -> if cs u < cs v then u else v) [u | u <- vertices2 gn, not (vs u)]
 
+kruskal :: C -> Gn -> G
+kruskal cost gn@(g, n) = construirGrafo (kruskal' aristasOrdenadas aristasACM verticesGrafo)
+    where
+        aristasOrdenadas = sortBy (\a b -> compare (cost a) (cost b)) (aristas gn)
+        aristasACM = []
+        verticesGrafo = vertices2 gn
 
-kruskal :: G -> [V]
-kruskal = undefined
+-- kruskal' toma la lista de aristas ordenadas por peso, el acm parcial y el conjunto de vértices del grafo
+kruskal' :: [A] -> [A] -> [V] -> [A]
+kruskal' [] acm _ = acm
+kruskal' (a:as) acm vs
+   | formaCiclo a acm = kruskal' as acm vs
+   | otherwise = kruskal' as (a:acm) vs
+
+-- Detecta si una lista de aristas forma un ciclo usando la función hayCamino
+formaCiclo :: A -> [A] -> Bool
+formaCiclo a acm = uncurry (hayCamino (construirGrafo acm)) a
 
 --Auxiliares
 estaIncluida :: Eq a => [a] -> [a] -> Bool

@@ -286,4 +286,29 @@ main = do
     putStrLn $ "dijkstraClase (c, (gNoConectado, 4)) 0 3: " ++ show (dijkstraClase (c, (gNoConectado, 4)) 0 3 == 99999)
     putStrLn "---FIN DIJKSTRA CLASE---"
 
+
+    -- Función de costo para pruebas
+    let c (v1, v2) = if v1 == v2 then 0 else v1
+
+    -- Grafo de prueba
+    let gTest v = case v of
+            0 -> [1, 2]
+            1 -> [2, 3]
+            2 -> [3]
+            3 -> []
+            _ -> []
+
+    -- Grafo completo
+    let gCompleto v = [u | u <- [0..3], u /= v]
+
+    putStrLn "---COMIENZO KRUSKAL---"
+    -- Probar con un grafo simple
+    let gKruskal = kruskal c (gTest, 4)
+    putStrLn $ "kruskal c (gTest, 4) 0: " ++ show (mismosElementos (gKruskal 0) [1, 2] && mismosElementos (gKruskal 1) [3] && null (gKruskal 2) && null (gKruskal 3))
+
+    -- Probar con un grafo completo
+    let gKruskalCompleto = kruskal c (gCompleto, 4)
+    putStrLn $ "kruskal c (gCompleto, 4) 0: " ++ show (mismosElementos (gKruskalCompleto 0 ) [1, 2, 3] && null (gKruskalCompleto 1) && null (gKruskalCompleto 2) && null (gKruskalCompleto 3))
+    putStrLn "---FIN KRUSKAL---"
+
     putStrLn "Fin de pruebas de funciones de grafos"
