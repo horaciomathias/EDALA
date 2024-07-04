@@ -343,4 +343,37 @@ main = do
     putStrLn $ "kruskal c (gCompleto, 4) 0: " ++ showColoredBool (mismosElementos (gKruskalCompleto 0 ) [1, 2, 3] && null (gKruskalCompleto 1) && null (gKruskalCompleto 2) && null (gKruskalCompleto 3))
     putStrLn "---FIN KRUSKAL---"
 
+
+        -- Grafo de prueba acíclico dirigido
+    let gTest v = case v of
+                      0 -> [1, 2]
+                      1 -> [2]
+                      2 -> [3]
+                      3 -> []
+                      _ -> []
+
+    -- Grafo con múltiples caminos acíclicos
+    let gTest2 v = case v of
+                       0 -> [1, 2]
+                       1 -> [3]
+                       2 -> [3, 4]
+                       3 -> [4]
+                       4 -> []
+                       _ -> []
+
+    -- Grafo con un ciclo
+    let gCiclo v = case v of
+                       0 -> [1]
+                       1 -> [2]
+                       2 -> [0]
+                       _ -> []
+
+    putStrLn "---COMIENZO FLOYD-WARSHALL---"
+    putStrLn $ "floydWarshall (gTest, 4): " ++ showColoredBool (floydWarshall (gTest, 4) == [[0, 1, 1, 2], [99999, 0, 1, 2], [99999, 99999, 0, 1], [99999, 99999, 99999, 0]])
+    putStrLn $ "floydWarshall (gTest2, 5): " ++ showColoredBool (floydWarshall (gTest2, 5) == [[0, 1, 1, 2, 2], [99999, 0, 99999, 1, 1], [99999, 99999, 0, 1, 1], [99999, 99999, 99999, 0, 1], [99999, 99999, 99999, 99999, 0]])
+    putStrLn $ "floydWarshall (gCiclo, 3): " ++ showColoredBool (floydWarshall (gCiclo, 3) == [[0, 1, 2], [2, 0, 1], [1, 2, 0]])
+    putStrLn "---FIN FLOYD-WARSHALL---"
+
+
+
     putStrLn "Fin de pruebas de funciones de grafos"
